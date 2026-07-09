@@ -124,6 +124,9 @@ int main(int argc, char *argv[])
 
     char *device = argv[1]; // inerface that we are going to sniff (eth0)
 
+    char *filter_string =
+        argv[2]; // filter string that is needed for pcap filter
+
     pcap_t *handle; // sessions handle (smth like id)
 
     char errbuf[PCAP_ERRBUF_SIZE]; // buffer(string) that contains our error
@@ -143,6 +146,8 @@ int main(int argc, char *argv[])
 
     int counter = 0; // Couner for counting our packets
 
+    struct bpf_program bf;
+
     // Initilazing our device that is going to be sniffing
 
     if (pcap_lookupnet(device, &net, &mask, errbuf) == -1) {
@@ -161,6 +166,22 @@ int main(int argc, char *argv[])
 
     if (handle == NULL) {
         fprintf(stderr, "Couldn't open device %s: %s\n", device, errbuf);
+        return (2);
+    }
+
+    /* pcap_compile puts bytcode bpf instrcutions generated modeled by our
+       filter string in bpf_program structure which contains
+       bf_len-> number of BPF instrucutions and
+       bf_insns-> holds our insturctions */
+    if (pcap_compile(handle, &bf, filter_string, 0, mask)) {
+        printf("Ne mogu parsirati filter");
+        return (2);
+    }
+
+    /* pcap_setfilter sets our bpf bytcode in kernal with our session handle*/
+
+    if (pcap_setfilter(handle, &bf)) {
+        printf("Ne mogu postaviti filter");
         return (2);
     }
 

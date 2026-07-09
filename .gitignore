@@ -1,1 +1,9 @@
 .clang-format
+skripta_tcp.sh
+skripta_udp.sh
+clang_skripta.sh
+sniffer
+server_tcp
+client_tcp
+server_udp
+client_udp
