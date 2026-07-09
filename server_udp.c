@@ -1,4 +1,5 @@
 // server.c
+#include <errno.h>
 #include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,10 +13,11 @@ int main(void)
     int op = 1;
     struct sockaddr_in address;
     char buffer[1024] = {0};
-    char *message = "Prva poruka sa servera";
+    char *message = "Message from server";
 
-    if ((server_fd = socket(AF_INET, SOCK_DGRAM, 0)) <
-        0) { // Initilazing socket
+    // Initializing socket
+    if ((server_fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+        perror("socket: ");
         exit(EXIT_FAILURE);
     }
 
@@ -23,40 +25,61 @@ int main(void)
 
     if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &op,
                    sizeof(op))) {
+        perror("setsocketopt: ");
         exit(EXIT_FAILURE);
     }
 
-    // Setting where out packet are going to recived (.sinfamiy AF_INET=IPv4,
-    //.s_addr=packets can come from any address, .sinport=port that is going to
-    // proccess our packets)
+    /* Setting where our packets are going to be received (.sin_family
+    AF_INET=IPv4, .s_addr=packets can come from any address, .sin_port=port that
+    is going to process our packets) */
 
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(PORT);
 
-    // Bindig socket with socketaddr_in structure
+    // Binding socket with sockaddr_in structure
 
     if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
+        perror("bind: ");
         exit(EXIT_FAILURE);
     }
 
-    // Structure that is holding information about our sender(client)
+    // Structure that is holding information about our sender (client)
 
     struct sockaddr_in client_addr;
     socklen_t client_len = sizeof(client_addr);
 
-    // Waiting for packets, and sending resposne back to the sender
+    // Waiting for packets, and sending response back to the sender
 
     while (1) {
         memset(buffer, 0, sizeof(buffer));
-        recvfrom(server_fd, buffer, 1024 - 1, 0,
-                 (struct sockaddr *)&client_addr, &client_len);
-        printf("Primljeno: %s\n", buffer);
-        sendto(server_fd, message, strlen(message), 0,
-               (struct sockaddr *)&client_addr, client_len);
+        int valread = recvfrom(server_fd, buffer, 1024 - 1, 0,
+                               (struct sockaddr *)&client_addr, &client_len);
+
+        if (valread < 0) {
+            int err = errno;
+            perror("recvfrom: ");
+            break;
+        }
+
+        printf("Accepted: %s\n", buffer);
+
+        ssize_t sent = sendto(server_fd, message, strlen(message), 0,
+                              (struct sockaddr *)&client_addr, client_len);
+
+        if (sent < 0) {
+            int err = errno;
+            perror("sendto: ");
+            if (err == EINTR) {
+                continue;
+            }
+            break;
+        }
     }
 
-    close(server_fd);
+    if (close(server_fd) < 0) {
+        perror("close: ");
+    }
 
     return 0;
 }

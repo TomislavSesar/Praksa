@@ -5,5 +5,6 @@ clang_skripta.sh
 sniffer
 server_tcp
 client_tcp
-server_udp
-client_udp
+server
+client
+argparse.c

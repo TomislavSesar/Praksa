@@ -9,13 +9,13 @@
 int main(void)
 {
     int client_fd, status, valread;
-    char *poruka = "Poruka od klijeta";
+    char *message = "Message sent";
     struct sockaddr_in serv_addr;
     char buffer[1024] = {0};
 
-    if ((client_fd = socket(AF_INET, SOCK_STREAM, 0)) <
-        0) { // Initilazing socket for TCP
-        printf("\n Greska \n");
+    // Initilazing socket for TCP
+    if ((client_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        perror("socket: ");
         return -1;
     }
 
@@ -23,13 +23,13 @@ int main(void)
     serv_addr.sin_port = htons(PORT);
 
     if (inet_pton(AF_INET, "10.0.0.10", &serv_addr.sin_addr) <= 0) {
-        printf("\nInvalid address/ Address not supported \n");
+        fprintf(stderr, "Inavlid adress");
         return -1;
     }
 
     if ((status = connect(client_fd, (struct sockaddr *)&serv_addr,
                           sizeof(serv_addr))) < 0) {
-        printf("Connection failed\n");
+        perror("connect: ");
         return -1;
     }
 
@@ -37,14 +37,29 @@ int main(void)
 
         memset(buffer, 0, sizeof(buffer));
 
-        send(client_fd, poruka, strlen(poruka), 0);
+        if (send(client_fd, message, strlen(message), 0) < 0) {
+            perror("send: ");
+            break;
+        }
 
-        printf("Poruka poslana\n");
+        printf("Message sent\n");
 
         valread = read(client_fd, buffer, 1024 - 1);
+
+        if (valread < 0) {
+            perror("read: ");
+            break;
+        } else if (valread == 0) {
+            printf("Connection closed");
+            break;
+        }
 
         printf("%s\n", buffer);
     }
 
-    close(client_fd);
+    if (close(client_fd)) {
+        perror("close: ");
+    }
+
+    return 0;
 }
