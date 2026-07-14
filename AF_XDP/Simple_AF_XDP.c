@@ -23,11 +23,11 @@
 #define MAX_IFACES 1
 
 /*
-    UMEM info
-    xsk_ring_prod -> fill queue
-    xsk_ring_cons -> collect queue
-    *umem -> pointer to umem structure that we don't have full access
-    *buffer -> pointer to the beginning of our umem memory
+ *UMEM info
+ *xsk_ring_prod -> fill queue
+ *xsk_ring_cons -> collect queue
+ * *umem -> pointer to umem structure that we don't have full access
+ * *buffer -> pointer to the beginning of our umem memory
 */
 struct xsk_umem_info {
     struct xsk_ring_prod fq;
@@ -37,12 +37,12 @@ struct xsk_umem_info {
 };
 
 /*
-    Socket info
-    xsk_ring_cons -> rx ring
-    xsk_ring_prod -> tx ring
-    xsk_umem_info -> structure explained above
-    xsk_socket *xsk ->  pointer to our scoket structure
-                    that we don't have full access
+ *Socket info
+ *xsk_ring_cons -> rx ring
+ *xsk_ring_prod -> tx ring
+ *xsk_umem_info -> structure explained above
+ *xsk_socket *xsk ->  pointer to our scoket structure
+ *that we don't have full access
 */
 struct xsk_socket_info {
     struct xsk_ring_cons rx;
@@ -52,21 +52,21 @@ struct xsk_socket_info {
 };
 
 /*
-    XDP context
-    *ifname -> interface name
-    ifindex -> interface number(id)
-    xsk_if_queue -> number(id) of channel
-    *buffer -> pointer that points to the beginning of the UMEM memory
-    xdp_flags -> holds parametrs that control how XDP program is going to attach
-    to the interface xsk_bind_flags -> control how XDP socket is going to bind to
-    an interface umem_flags -> flags that configure UMEM umem_frames_nr -> number
-    of frames in UMEM umem_fill_size -> number of slots in fill_ring where UMEM
-    descriptors can be put in umem_comp_size ->   number of slots in
-    completion_ring where UMEM descriptors can be put in packet_handler_tid ->
-    thread that reads our packets that have arrived to our UMEM or sending them
-    packet_handler_thread_started -> bool flag that tells us if our thread is
-    activated successfully
-        */
+ *XDP context
+ * *ifname -> interface name
+ *ifindex -> interface number(id)
+ *xsk_if_queue -> number(id) of channel
+ * *buffer -> pointer that points to the beginning of the UMEM memory
+ *xdp_flags -> holds parametrs that control how XDP program is going to attach
+ *to the interface xsk_bind_flags -> control how XDP socket is going to bind to
+ *an interface umem_flags -> flags that configure UMEM umem_frames_nr -> number
+ *of frames in UMEM umem_fill_size -> number of slots in fill_ring where UMEM
+ *descriptors can be put in umem_comp_size ->   number of slots in
+ *completion_ring where UMEM descriptors can be put in packet_handler_tid ->
+ *thread that reads our packets that have arrived to our UMEM or sending them
+ *packet_handler_thread_started -> bool flag that tells us if our thread is
+ *activated successfully
+*/
 
 struct xdp_eth_context {
     const char *ifname;
