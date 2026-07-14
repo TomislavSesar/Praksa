@@ -18,6 +18,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <xdp/xsk.h>
+#include <xdp/libxdp.h>
 
 #define MAX_IFACES 1
 
@@ -77,6 +78,8 @@ struct xdp_eth_context {
     uint32_t xdp_flags;
     uint16_t xsk_bind_flags;
     uint32_t umem_flags;
+
+    struct xdp_program *xdp_prog; 
 
     int ifindex;
 
@@ -214,7 +217,7 @@ static struct xsk_socket_info *xsk_configure_socket(struct xdp_eth_context *ctx)
     xsk->umem = ctx->umem;
     cfg.xdp_flags = ctx->xdp_flags;
     cfg.bind_flags = ctx->xsk_bind_flags;
-    cfg.libbpf_flags = 0;
+    cfg.libbpf_flags = XSK_LIBBPF_FLAGS__INHIBIT_PROG_LOAD;
     cfg.rx_size = ctx->socket_rx_ring_size;
     cfg.tx_size = ctx->socket_tx_ring_size;
 
@@ -409,6 +412,12 @@ static void tear_down(int reason)
         }
     }
 
+    if (ctx.xdp_prog != NULL) {
+        xdp_program__detach(ctx.xdp_prog, ctx.ifindex, XDP_MODE_SKB, 0);
+        xdp_program__close(ctx.xdp_prog);
+        ctx.xdp_prog = NULL;
+    }
+
     if (ctx.xsk_socket != NULL && ctx.xsk_socket->xsk != NULL) {
         printf("%s: xsk_socket__delete\n", __func__);
         xsk_socket__delete(ctx.xsk_socket->xsk);
@@ -440,7 +449,6 @@ static void exit_application(int signal)
 
 int main(int argc, char **argv)
 {
-
     int err = 0;
     int cntr = 0;
 
@@ -484,6 +492,22 @@ int main(int argc, char **argv)
                strerror(errno));
         exit_application(0);
     }
+
+    ctx.xdp_prog = xdp_program__open_file("my_xdp_prog.o", NULL, NULL);
+    if (!ctx.xdp_prog) {
+        printf("Failed to open XDP program\n");
+        exit_application(0);
+    }
+
+    err = xdp_program__attach(ctx.xdp_prog, ctx.ifindex, XDP_MODE_SKB, 0);
+    if (err) {
+        printf("Failed to attach XDP program: %d\n", err);
+        exit_application(0);
+    }
+
+    int map_fd = bpf_map__fd(bpf_object__find_map_by_name(
+                xdp_program__bpf_obj(ctx.xdp_prog), "xsks_map"));
+    xsk_socket__update_xskmap(ctx.xsk_socket->xsk, map_fd);
 
     err = pthread_create(&ctx.packet_handler_tid, NULL, rx_thread, &ctx);
     if (err) {
