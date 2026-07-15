@@ -17,8 +17,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <xdp/xsk.h>
 #include <xdp/libxdp.h>
+#include <xdp/xsk.h>
 
 #define MAX_IFACES 1
 
@@ -28,7 +28,7 @@
  *xsk_ring_cons -> collect queue
  * *umem -> pointer to umem structure that we don't have full access
  * *buffer -> pointer to the beginning of our umem memory
-*/
+ */
 struct xsk_umem_info {
     struct xsk_ring_prod fq;
     struct xsk_ring_cons cq;
@@ -43,7 +43,7 @@ struct xsk_umem_info {
  *xsk_umem_info -> structure explained above
  *xsk_socket *xsk ->  pointer to our scoket structure
  *that we don't have full access
-*/
+ */
 struct xsk_socket_info {
     struct xsk_ring_cons rx;
     struct xsk_ring_prod tx;
@@ -66,7 +66,7 @@ struct xsk_socket_info {
  *thread that reads our packets that have arrived to our UMEM or sending them
  *packet_handler_thread_started -> bool flag that tells us if our thread is
  *activated successfully
-*/
+ */
 
 struct xdp_eth_context {
     const char *ifname;
@@ -79,7 +79,7 @@ struct xdp_eth_context {
     uint16_t xsk_bind_flags;
     uint32_t umem_flags;
 
-    struct xdp_program *xdp_prog; 
+    struct xdp_program *xdp_prog;
 
     int ifindex;
 
@@ -506,7 +506,7 @@ int main(int argc, char **argv)
     }
 
     int map_fd = bpf_map__fd(bpf_object__find_map_by_name(
-                xdp_program__bpf_obj(ctx.xdp_prog), "xsks_map"));
+        xdp_program__bpf_obj(ctx.xdp_prog), "xsks_map"));
     xsk_socket__update_xskmap(ctx.xsk_socket->xsk, map_fd);
 
     err = pthread_create(&ctx.packet_handler_tid, NULL, rx_thread, &ctx);

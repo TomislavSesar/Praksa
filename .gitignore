@@ -9,3 +9,5 @@ server
 client
 argparse.c
 Simple_AF_XDP
+my_xdp_prog.o
+skripta_compiling.sh
