@@ -19,6 +19,7 @@
 #include <unistd.h>
 #include <xdp/libxdp.h>
 #include <xdp/xsk.h>
+#include <bpf/libbpf.h> 
 
 #define MAX_IFACES 1
 
@@ -438,6 +439,7 @@ static void tear_down(int reason)
         free(ctx.buffer);
         ctx.buffer = NULL;
     }
+     remove("/sys/fs/bpf/xdpcap_hook");
 }
 
 static void exit_application(int signal)
@@ -453,6 +455,9 @@ int main(int argc, char **argv)
     int cntr = 0;
 
     argp_parse(&argp, argc, argv, 0, NULL, &arguments);
+
+    signal(SIGINT, exit_application);
+    signal(SIGTERM, exit_application);
 
     ctx.xdp_flags = XDP_FLAGS_SKB_MODE;
     ctx.xsk_bind_flags = XDP_COPY;
@@ -493,7 +498,7 @@ int main(int argc, char **argv)
         exit_application(0);
     }
 
-    ctx.xdp_prog = xdp_program__open_file("my_xdp_prog.o", NULL, NULL);
+    ctx.xdp_prog = xdp_program__open_file("xdp_filter.o", NULL, NULL);
     if (!ctx.xdp_prog) {
         printf("Failed to open XDP program\n");
         exit_application(0);
@@ -502,6 +507,19 @@ int main(int argc, char **argv)
     err = xdp_program__attach(ctx.xdp_prog, ctx.ifindex, XDP_MODE_SKB, 0);
     if (err) {
         printf("Failed to attach XDP program: %d\n", err);
+        exit_application(0);
+    }
+    int xdpcap_map_fd = bpf_map__fd(bpf_object__find_map_by_name(
+    xdp_program__bpf_obj(ctx.xdp_prog), "xdpcap_hook"));
+
+    if (xdpcap_map_fd < 0) {
+        printf("Failed to find xdpcap_hook map\n");
+        exit_application(0);
+    }
+
+    err = bpf_obj_pin(xdpcap_map_fd, "/sys/fs/bpf/xdpcap_hook");
+    if (err) {
+        printf("Failed to pin xdpcap_hook map: %s\n", strerror(errno));
         exit_application(0);
     }
 
