@@ -11,3 +11,12 @@ argparse.c
 Simple_AF_XDP
 my_xdp_prog.o
 skripta_compiling.sh
+XDP_with_pcap_strings/
+skripta_compiling_v2.sh
+xdp_xdpcap.o
+pktgen_script.sh
+dump.pcap
+go.mod 
+go.sum
+primjer.go
+*.pcap
